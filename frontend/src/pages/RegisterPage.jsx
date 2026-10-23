@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import apiClient from '../api/axios';
 import { useNavigate, Link } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 
 function RegisterPage() {
   const [formData, setFormData] = useState({
@@ -10,6 +11,7 @@ function RegisterPage() {
   })
   const [error,setError] = useState('');
   const navigate = useNavigate();
+  const { logout } = useAuth();
 
   const handleChange = (e)=>{
     setFormData({...formData,[e.target.name]:e.target.value})
@@ -20,7 +22,14 @@ function RegisterPage() {
     setError('');
     try{
       await apiClient.post('/users/register',formData);
-      navigate('/login');
+      logout(); //清空旧的token和user，避免注册完还残留上一个账号的登录态
+      //把刚注册的邮箱密码传给登录页，自动填充表单
+      navigate('/login', {
+        state: {
+          prefillEmail: formData.email,
+          prefillPassword: formData.password
+        }
+      });
     }catch(err){
       setError(err.response?.data?.msg || "注册失败");
     }

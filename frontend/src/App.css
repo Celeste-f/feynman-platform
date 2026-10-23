@@ -54,6 +54,20 @@
   background: #fdecec;
 }
 
+.nav-user {
+  font-size: 13px;
+  color: #5b7cfa;
+  font-weight: 600;
+  margin-left: 6px;
+  padding: 6px 12px;
+  background: #eef2ff;
+  border-radius: 8px;
+  white-space: nowrap;
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 /* ================= 登录 / 注册卡片 ================= */
 .auth-wrap {
   min-height: calc(100vh - 60px);

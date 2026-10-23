@@ -1,7 +1,7 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors'); // 解决跨域问题
-require('dotenv').config();
+require('dotenv').config({ path: require('path').join(__dirname, '.env') }); // 强制从backend目录读取.env，避免找不到
 const User = require('./models/User'); // 用户模型
 const bcrypt = require('bcryptjs');     // 密码加密工具
 const jwt = require('jsonwebtoken');   // JWT 生成 token

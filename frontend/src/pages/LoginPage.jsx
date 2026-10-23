@@ -1,12 +1,13 @@
 import { useState } from 'react'
 import apiClient from '../api/axios'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 
 export default function LoginPage() {
-  const [email,setEmail] = useState('')
-  const [password,setPassword] = useState('')
+  const location = useLocation()
+  const [email,setEmail] = useState(location.state?.prefillEmail || '')
+  const [password,setPassword] = useState(location.state?.prefillPassword || '')
   const [error,setError] = useState('')
   const navigate = useNavigate()
   const { login } = useAuth()
@@ -16,7 +17,7 @@ export default function LoginPage() {
     setError('')
     try{
       const res = await apiClient.post('/users/login',{email,password})
-      login(res.data.token)
+      login(res.data.token, res.data.user)
       navigate('/')
     }catch(err){
       setError(err.response?.data?.msg || "登录失败")
