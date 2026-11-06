@@ -1,50 +1,26 @@
-import { useState } from 'react';
-import axios from 'axios';
-import './App.css';
+import KnowledgePointFormPage from './pages/KnowledgePointFormPage';
+import { Routes,Route } from 'react-router-dom'
+import './App.css'
+import Layout from './components/Layout'
+import LoginPage from './pages/LoginPage'
+import RegisterPage from './pages/RegisterPage'
+import DashboardPage from './pages/DashboardPage'
+import ProtectedRoute from './components/ProtectedRoute'
 
 function App() {
-  const [form, setForm] = useState({
-    email: "chenqi@test.com",
-    password: "chenqi123"
-  });
-  const [msg, setMsg] = useState("");
-  const [isSuccess, setIsSuccess] = useState(false);
-
-  const handleLogin = async () => {
-    try {
-      const res = await axios.post('http://localhost:3000/api/login', form);
-      setMsg("登录成功！Token：" + res.data.token);
-      setIsSuccess(true);
-      console.log('token', res.data.token);
-    } catch (err) {
-      setMsg("登录失败：" + (err.response?.data?.message || err.message));
-      setIsSuccess(false);
-    }
-  }
-
   return (
-    <div className="login-box">
-      <h2>用户登录</h2>
-      <div className="item">
-        <label>邮箱：</label>
-        <input
-          value={form.email}
-          onChange={(e) => setForm({...form, email:e.target.value})}
-          type="email" placeholder="请输入邮箱"
-        />
-      </div>
-      <div className="item">
-        <label>密码：</label>
-        <input
-          value={form.password}
-          onChange={(e) => setForm({...form, password:e.target.value})}
-          type="password" placeholder="请输入密码"
-        />
-      </div>
-      <button onClick={handleLogin}>登录</button>
-      { msg && <p className={isSuccess ? "success" : ""}>{msg}</p> }
-    </div>
-  );
+    <Routes>
+      <Route element={<Layout />}>
+        <Route path="/login" element={<LoginPage />}/>
+        <Route path="/register" element={<RegisterPage />}/>
+        {/*受保护页面，必须登录*/}
+        <Route element={<ProtectedRoute />}>
+          <Route path="/" element={<DashboardPage />}/>
+          <Route path="/knowledge/new" element={<KnowledgePointFormPage />} />
+          <Route path="/knowledge/edit/:id" element={<KnowledgePointFormPage />} />
+        </Route>
+      </Route>
+    </Routes>
+  )
 }
-
-export default App;
+export default App

@@ -6,3 +6,7 @@ yarn-debug.log*
 yarn-error.log*
 dist
 build
+token.txt
+backend_err.txt
+backend_log.txt
+*.log
