@@ -126,6 +126,9 @@ export default function DashboardPage() {
             </div>
             <MarkdownRenderer content={item.content} />
             <div style={{ marginTop: '10px' }}>
+              <button onClick={() => navigate(`/feynman/${item._id}`)} style={{ marginRight: '8px', background: '#2563eb', color: '#fff', border: 'none', padding: '4px 10px', borderRadius: '4px', cursor: 'pointer' }}>
+                🎤 开始复述
+              </button>
               <button onClick={() => openEdit(item)} style={{ marginRight: '8px' }}>
                 编辑
               </button>

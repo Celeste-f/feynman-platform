@@ -1,4 +1,5 @@
 import KnowledgePointFormPage from './pages/KnowledgePointFormPage';
+import FeynmanRecordPage from './pages/FeynmanRecordPage';
 import { Routes,Route } from 'react-router-dom'
 import './App.css'
 import Layout from './components/Layout'
@@ -18,6 +19,7 @@ function App() {
           <Route path="/" element={<DashboardPage />}/>
           <Route path="/knowledge/new" element={<KnowledgePointFormPage />} />
           <Route path="/knowledge/edit/:id" element={<KnowledgePointFormPage />} />
+          <Route path="/feynman/:id" element={<FeynmanRecordPage />} />
         </Route>
       </Route>
     </Routes>

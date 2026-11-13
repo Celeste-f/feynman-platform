@@ -1,10 +1,15 @@
 const express = require('express');
 const router = express.Router();
 const multer = require('multer');
-const whisperCtrl = require('../controllers/whisperController');
+const auth = require('../middleware/auth');
+const baiduCtrl = require('../controllers/baiduAiController');
 
 const upload = multer();
 
-router.post("/transcribe-local", upload.single("audio"), whisperCtrl.transcribeAudioLocal);
+// 语音转文字
+router.post("/transcribe-local", upload.single("audio"), baiduCtrl.transcribeAudioLocal);
+
+// AI 润色与评价
+router.post("/evaluate", auth, baiduCtrl.evaluateFeynmanAttempt);
 
 module.exports = router;
