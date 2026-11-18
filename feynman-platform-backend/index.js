@@ -14,6 +14,7 @@ app.use(express.json());
 app.use('/api/users', require('./routes/users'));
 app.use('/api/knowledge-points', require('./routes/knowledgePoints'));
 app.use('/api/audio', require('./routes/audio'));
+app.use('/api/ai', require('./routes/ai'));
 
 // --- 首页 ---
 app.get('/', (req, res) => {

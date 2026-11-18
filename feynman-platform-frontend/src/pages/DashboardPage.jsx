@@ -2,14 +2,18 @@ import { useState, useEffect } from 'react';
 import api from '../api/axios';
 import { useNavigate } from 'react-router-dom';
 import MarkdownRenderer from '../components/MarkdownRenderer';
+import { getStatusInfo } from '../utils/kpStatus';
+import RichTextEditor from '../components/RichTextEditor';
+import DOMPurify from 'dompurify';
 
-const TYPE_LIST = ['笔记', '公式', '表格', '流程图', '状态图'];
+const TYPE_LIST = ['笔记', '公式', '表格', '流程图', '状态图', '富文本'];
 const TYPE_COLORS = {
   '笔记': '#888',
   '公式': '#1976d2',
   '表格': '#2e7d32',
   '流程图': '#ed6c02',
-  '状态图': '#9c27b0'
+  '状态图': '#9c27b0',
+  '富文本': '#6a1b9a'
 };
 
 export default function DashboardPage() {
@@ -123,11 +127,56 @@ export default function DashboardPage() {
               >
                 {item.type || '笔记'}
               </span>
+              {/* 掌握状态标签：未学习 / 已学习但未掌握 / 已学习且已掌握 */}
+              {(() => {
+                const s = getStatusInfo(item.status);
+                return (
+                  <span
+                    style={{
+                      color: s.color,
+                      background: s.bg,
+                      border: `1px solid ${s.color}`,
+                      fontSize: '12px',
+                      padding: '2px 8px',
+                      borderRadius: '10px',
+                      fontWeight: 500
+                    }}
+                  >
+                    {s.label}
+                  </span>
+                );
+              })}
+              {/* 答错后加入复习列表的标记 */}
+              {item.reviewList && (
+                <span
+                  style={{
+                    color: '#ed6c02',
+                    background: '#fff4e5',
+                    border: '1px solid #ed6c02',
+                    fontSize: '12px',
+                    padding: '2px 8px',
+                    borderRadius: '10px'
+                  }}
+                >
+                  🔁 需复习
+                </span>
+              )}
             </div>
-            <MarkdownRenderer content={item.content} />
+            {(item.type || '笔记') === '富文本' ? (
+              // 富文本：直接渲染保存下来的 HTML（先过滤危险标签，防 XSS）
+              <div
+                style={{ lineHeight: 1.7 }}
+                dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(item.content || '') }}
+              />
+            ) : (
+              <MarkdownRenderer content={item.content} />
+            )}
             <div style={{ marginTop: '10px' }}>
               <button onClick={() => navigate(`/feynman/${item._id}`)} style={{ marginRight: '8px', background: '#2563eb', color: '#fff', border: 'none', padding: '4px 10px', borderRadius: '4px', cursor: 'pointer' }}>
                 🎤 开始复述
+              </button>
+              <button onClick={() => navigate(`/quiz/${item._id}`)} style={{ marginRight: '8px', background: '#7b1fa2', color: '#fff', border: 'none', padding: '4px 10px', borderRadius: '4px', cursor: 'pointer' }}>
+                📝 开始测评
               </button>
               <button onClick={() => openEdit(item)} style={{ marginRight: '8px' }}>
                 编辑
@@ -160,7 +209,10 @@ export default function DashboardPage() {
               background: 'white',
               padding: '2rem',
               borderRadius: '8px',
-              width: '400px'
+              width: '640px',
+              maxWidth: '90vw',
+              maxHeight: '90vh',
+              overflowY: 'auto'
             }}
           >
             <h3>编辑知识点</h3>
@@ -185,12 +237,19 @@ export default function DashboardPage() {
             </div>
             <div>
               <label>内容</label>
-              <textarea
-                value={editItem.content}
-                onChange={(e) => setEditItem({ ...editItem, content: e.target.value })}
-                rows={4}
-                style={{ width: '100%', marginBottom: '1rem', padding: '0.4rem' }}
-              />
+              {editItem.type === '富文本' ? (
+                <RichTextEditor
+                  value={editItem.content}
+                  onChange={(html) => setEditItem({ ...editItem, content: html })}
+                />
+              ) : (
+                <textarea
+                  value={editItem.content}
+                  onChange={(e) => setEditItem({ ...editItem, content: e.target.value })}
+                  rows={16}
+                  style={{ width: '100%', marginBottom: '1rem', padding: '0.6rem', resize: 'vertical', minHeight: '260px', lineHeight: 1.6, fontFamily: 'inherit', fontSize: '14px' }}
+                />
+              )}
             </div>
             <div style={{ display: 'flex', gap: '10px' }}>
               <button onClick={submitEdit}>保存修改</button>
