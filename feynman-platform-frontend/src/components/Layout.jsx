@@ -17,9 +17,11 @@ export default function Layout(){
         {
           token ? (
             <>
-              <Link to="/" className="nav-link" onClick={()=>window.location.reload()}>首页</Link>
+              <Link to="/" className="nav-link">首页</Link>
               <Link to="/agent" className="nav-link">AI助手</Link>
               <Link to="/graph" className="nav-link">知识图谱</Link>
+              <Link to="/3d-world" className="nav-link">3D视界</Link>
+              <Link to="/universe" className="nav-link">知识宇宙</Link>
               <span className="nav-user">{user?.username || '用户'} · {user?.email || '-'}</span>
               <button className="btn-logout" onClick={handleLogout}>退出登录</button>
             </>
