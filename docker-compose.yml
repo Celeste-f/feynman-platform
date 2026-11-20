@@ -1,0 +1,32 @@
+# 第十六次课：一键起全栈（docker compose up -d --build）
+# 数据库用 MongoDB Atlas 云数据库（.env 里的 MONGO_URI），无需本地 mongo 容器。
+# 如果想在容器里自托管 MongoDB，取消 mongo 服务注释并改 backend .env 的 MONGO_URI。
+services:
+  api:
+    build: ./feynman-platform-backend
+    container_name: feynman-api
+    env_file: ./feynman-platform-backend/.env   # 密钥不进镜像，运行时注入
+    volumes:
+      - feynman-vector-store:/app/vector_store  # 向量库持久化
+    ports:
+      - "3000:3000"
+    restart: unless-stopped
+
+  web:
+    build: ./feynman-platform-frontend
+    container_name: feynman-web
+    depends_on: [api]
+    ports:
+      - "8080:80"        # 浏览器访问 http://localhost:8080
+    restart: unless-stopped
+
+  # mongo:
+  #   image: mongo:7
+  #   volumes:
+  #     - feynman-mongo:/data/db
+  #   ports:
+  #     - "27017:27017"
+
+volumes:
+  feynman-vector-store:
+  # feynman-mongo:
