@@ -1,5 +1,7 @@
 const axios = require('axios');
 const KnowledgePoint = require('../models/KnowledgePoint');
+// 第十一次课：RAG 检索（复用第十次课的本地向量库服务）
+const { searchRelevant } = require('../services/vectorStoreService');
 
 // ==================== 语音识别（百度短语音 ASR，用 AK/SK 换 access_token） ====================
 
@@ -70,6 +72,12 @@ exports.transcribeAudioLocal = async (req, res) => {
 const ARK_URL = 'https://ark.cn-beijing.volces.com/api/v3/chat/completions';
 
 async function callDoubao(messages) {
+  const raw = await arkChat(messages);
+  return parseJsonResult(raw);
+}
+
+// 底层调用：返回模型输出的原始文本（第十一次课 RAG 问答需要纯文本回答，不做 JSON 解析）
+async function arkChat(messages) {
   const apiKey = process.env.ARK_API_KEY;
   // 兼容两种写法：ARK_MODEL 或 ARK_MODEL_ID（填模型 ID 或接入点 ID 都可以）
   const model = process.env.ARK_MODEL || process.env.ARK_MODEL_ID;
@@ -115,7 +123,7 @@ async function callDoubao(messages) {
 
   const raw = (resp.data.choices?.[0]?.message?.content || '').trim();
   console.log('豆包返回原始内容：', raw);
-  return parseJsonResult(raw);
+  return raw;
 }
 
 // 把模型返回的文本解析成 JSON（兼容被 ```json 包裹的情况）
@@ -406,5 +414,61 @@ ${RESULT_FORMAT}`;
   } catch (error) {
     console.error('语音内容评价失败：', error.message);
     res.status(502).json({ msg: error.message });
+  }
+};
+
+// ==================== 第十一次课：RAG 检索问答（检索 -> Prompt 构建 -> 生成 完整链路） ====================
+//
+// 原生实现课程教案的 RAG Chain（等价于 LangChain 的 retriever | prompt | llm | parser 管道）：
+//   1. 检索器：searchRelevant(question, k=4, userId) —— 问题向量化 + 余弦相似度 Top-K
+//   2. Prompt 构建：MCP 风格结构化模板（<role>/<instruction>/<context>/<question>）
+//   3. LLM 生成：arkChat 输出纯文本回答
+//   4. 返回答案 + 引用来源（选做作业：显示引用来源）
+exports.answerWithRAG = async (req, res) => {
+  const { question } = req.body;
+  if (!question || !question.trim()) {
+    return res.status(400).json({ msg: 'Question is required.' });
+  }
+
+  try {
+    // 1. [检索] 只在当前用户的知识块中找最相关的 4 个片段
+    const docs = await searchRelevant(question.trim(), 4, req.user.id);
+    console.log(`为问题 "${question}" 检索到 ${docs.length} 个相关文档片段。`);
+
+    // 2. [格式化] 把检索到的片段拼成背景资料
+    const context = docs.length
+      ? docs.map((d, i) => `--- 资料 ${i + 1}（出自知识点《${d.title || '未命名'}》）---\n${d.text}`).join('\n\n')
+      : '（知识库中没有检索到任何相关资料）';
+
+    // 3. [Prompt 模板] 遵循 MCP 结构化原则：用标签明确各部分内容的角色，减少歧义、抑制幻觉
+    const prompt =
+      `<role>你是一个知识库问答机器人。</role>\n` +
+      `<instruction>请只根据下面 <context> 中提供的信息来回答用户的 <question>。` +
+      `如果上下文中没有相关信息，就明确回答"我的知识库中没有这方面的内容"，绝对不要编造答案。` +
+      `请让回答简洁明了，可以用要点列表组织。</instruction>\n\n` +
+      `<context>\n${context}\n</context>\n\n` +
+      `<question>\n${question}\n</question>\n\n` +
+      `<answer>你的回答是：</answer>`;
+
+    // 4. [生成] 调用豆包，直接取纯文本回答（清理模型可能复读的 <answer> 标签）
+    const rawAnswer = await arkChat([
+      { role: 'system', content: '你是严谨的知识库问答助手，只依据提供的资料作答。' },
+      { role: 'user', content: prompt }
+    ]);
+    const answer = rawAnswer.replace(/^<\/?answer>/i, '').replace(/<\/answer>$/i, '').trim();
+
+    // 5. [返回] 答案 + 引用来源（前端展示"根据哪些片段回答"）
+    res.json({
+      answer,
+      sources: docs.map((d) => ({
+        knowledgePointId: d.knowledgePointId,
+        title: d.title || '未命名知识点',
+        excerpt: d.text.length > 150 ? d.text.slice(0, 150) + '…' : d.text,
+        score: Number(d.score.toFixed(3))
+      }))
+    });
+  } catch (error) {
+    console.error('RAG Chain execution error:', error.message);
+    res.status(502).json({ msg: error.message || 'RAG 问答失败' });
   }
 };
